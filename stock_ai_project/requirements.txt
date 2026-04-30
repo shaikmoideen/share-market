@@ -1,0 +1,12 @@
+streamlit
+yfinance
+pandas
+matplotlib
+requests
+textblob
+scikit-learn
+joblib
+python-dateutil
+
+# If later, you move system to another lap, you only run:
+# python -m pip install -r requirements.txt
