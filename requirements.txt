@@ -14,7 +14,7 @@ ta
 nltk
 xgboost
 lightgbm
-tensorflow
+tensorflow==2.15.0
 keras
 vaderSentiment
 
