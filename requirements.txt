@@ -1,0 +1,22 @@
+streamlit
+yfinance
+pandas
+numpy
+matplotlib
+plotly
+requests
+textblob
+scikit-learn
+joblib
+python-dateutil
+newsapi-python
+ta
+nltk
+xgboost
+lightgbm
+tensorflow
+keras
+vaderSentiment
+
+# Later, If you move this project to another system, Just run the below cmd.
+# python -m pip install -r requirements.txt
