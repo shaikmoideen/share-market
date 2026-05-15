@@ -17,6 +17,7 @@ lightgbm
 tensorflow-cpu==2.15.0
 keras
 vaderSentiment
+apscheduler
 
 # Later, If you move this project to another system, Just run the below cmd.
 # python -m pip install -r requirements.txt
