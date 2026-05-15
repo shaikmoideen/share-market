@@ -1,6 +1,7 @@
-# .github/workflows/daily_jobs.yml
-
 name: Daily Background Jobs
+
+permissions:
+  contents: write
 
 on:
   schedule:
@@ -45,7 +46,7 @@ jobs:
       # 4. Update Top 3 Buy Opportunities
       # ---------------------------------
       - name: Update Top Stocks
-        run: python update_top_stocks.py
+        run: python update_top_3_stocks.py
 
       # ---------------------------------
       # 5. Train Main ML Model
@@ -55,8 +56,17 @@ jobs:
 
       # ---------------------------------
       # 6. Daily LSTM Training
-      # Recommended:
-      # create run_daily_lstm.py
       # ---------------------------------
       - name: Daily LSTM Training
         run: python run_daily_lstm.py
+
+      # ---------------------------------
+      # Auto Commit Updated Files
+      # ---------------------------------
+      - name: Commit updated files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git commit -m "Auto update daily generated files" || echo "No changes to commit"
+          git push

@@ -1,6 +1,7 @@
-# .github/workflows/weekly_lstm.yml
-
 name: Weekly LSTM Training
+
+permissions:
+  contents: write
 
 on:
   schedule:
@@ -25,8 +26,17 @@ jobs:
 
       # ---------------------------------
       # Weekly Heavy LSTM Training
-      # Recommended:
-      # create run_weekly_lstm.py
       # ---------------------------------
       - name: Weekly LSTM Training
         run: python run_weekly_lstm.py
+
+      # ---------------------------------
+      # Auto Commit Updated Files
+      # ---------------------------------
+      - name: Commit weekly LSTM files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git commit -m "Auto update weekly LSTM models" || echo "No changes to commit"
+          git push
