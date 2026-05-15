@@ -8,7 +8,6 @@ from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
 from tensorflow.keras.callbacks import EarlyStopping
-from apscheduler.schedulers.blocking import BlockingScheduler
 
 from config import NSE_STOCK_MASTER
 
@@ -192,46 +191,3 @@ def run_on_demand_training(symbol):
 
     print(f"\n===== ON-DEMAND TRAINING ({symbol}) =====")
     train_single_stock(symbol, ONDEMAND_PATH)
-
-
-# --------------------------------------------------
-# AUTO SCHEDULER
-# --------------------------------------------------
-
-
-def start_scheduler():
-    scheduler = BlockingScheduler()
-
-    # Choice 1 → Every day auto scheduler
-    scheduler.add_job(
-        run_daily_training,
-        trigger="cron",
-        day_of_week="mon-fri",
-        hour=8,
-        minute=0,
-        id="daily_training"
-    )
-
-    # Choice 2 → Weekly auto scheduler
-    scheduler.add_job(
-        run_weekly_training,
-        trigger="cron",
-        day_of_week="sun",
-        hour=9,
-        minute=0,
-        id="weekly_training"
-    )
-
-    print("Scheduler Started")
-    print("Daily Training  → Mon-Fri at 8:00 AM")
-    print("Weekly Training → Sunday at 9:00 AM")
-
-    scheduler.start()
-
-
-# --------------------------------------------------
-# ENTRY POINT
-# --------------------------------------------------
-
-if __name__ == "__main__":
-    start_scheduler()

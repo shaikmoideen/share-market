@@ -1,0 +1,62 @@
+# .github/workflows/daily_jobs.yml
+
+name: Daily Background Jobs
+
+on:
+  schedule:
+    - cron: '30 0 * * *'   # 6:00 AM IST (UTC 00:30)
+  workflow_dispatch:
+
+jobs:
+  run-daily-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Requirements
+        run: pip install -r requirements.txt
+
+      # ---------------------------------
+      # 1. Update NSE Stock Master
+      # ---------------------------------
+      - name: Update NSE Stock Master
+        run: python update_nse_stock_master.py
+
+      # ---------------------------------
+      # 2. Update Nifty 50
+      # ---------------------------------
+      - name: Update Nifty 50
+        run: python update_nifty_50.py
+
+      # ---------------------------------
+      # 3. Update Sector Strength Cache
+      # ---------------------------------
+      - name: Update Sector Cache
+        run: python update_sector_cache.py
+
+      # ---------------------------------
+      # 4. Update Top 3 Buy Opportunities
+      # ---------------------------------
+      - name: Update Top Stocks
+        run: python update_top_stocks.py
+
+      # ---------------------------------
+      # 5. Train Main ML Model
+      # ---------------------------------
+      - name: Train Main Model
+        run: python train_model.py
+
+      # ---------------------------------
+      # 6. Daily LSTM Training
+      # Recommended:
+      # create run_daily_lstm.py
+      # ---------------------------------
+      - name: Daily LSTM Training
+        run: python run_daily_lstm.py

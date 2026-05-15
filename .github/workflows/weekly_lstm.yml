@@ -1,0 +1,32 @@
+# .github/workflows/weekly_lstm.yml
+
+name: Weekly LSTM Training
+
+on:
+  schedule:
+    - cron: '30 3 * * 0'   # Sunday 9:00 AM IST (UTC 03:30)
+  workflow_dispatch:
+
+jobs:
+  run-weekly-lstm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Requirements
+        run: pip install -r requirements.txt
+
+      # ---------------------------------
+      # Weekly Heavy LSTM Training
+      # Recommended:
+      # create run_weekly_lstm.py
+      # ---------------------------------
+      - name: Weekly LSTM Training
+        run: python run_weekly_lstm.py
