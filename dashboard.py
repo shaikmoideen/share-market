@@ -10,7 +10,6 @@ from utils.news_sentiment import get_stock_sentiment
 from utils.sector_strength import get_sector, calculate_sector_strength, get_sector_label
 from train_lstm import run_on_demand_training
 
-from utils.sector_strength import SECTOR_BENCHMARK
 from utils.stock_search import search_stock
 import pandas as pd
 import tensorflow as tf
@@ -409,64 +408,19 @@ if data.empty:
 live_price_section(ticker)
 
 # ---------------------------------
-# Sector Strength (Best Professional Approach)
-# Fixed Sector Leaders for Accurate Benchmarking
-# ---------------------------------
-
-@st.cache_data(ttl=3600)
-def load_sector_strength_data():
-    """
-    Load benchmark sector leaders
-    Refresh every 1 hour
-    """
-
-    data_dict = {}
-
-    for sector, symbols in SECTOR_BENCHMARK.items():
-
-        for symbol in symbols:
-            try:
-                ticker = symbol if symbol.endswith(".NS") else f"{symbol}.NS"
-
-                stock_data = yf.download(
-                    ticker,
-                    start=START_DATE,
-                    progress=False,
-                    auto_adjust=True
-                )
-
-                if isinstance(
-                    stock_data.columns,
-                    pd.MultiIndex
-                ):
-                    stock_data.columns = (
-                        stock_data.columns.get_level_values(0)
-                    )
-
-                if not stock_data.empty:
-                    data_dict[symbol] = stock_data
-
-            except Exception as e:
-                print(
-                    f"Sector strength fetch failed for {symbol}: {e}"
-                )
-
-    return data_dict
-
-# ---------------------------------
 # Use Cached Sector Strength Data
 # ---------------------------------
 
-data_dict = load_sector_strength_data()
+CACHE_FILE = "sector_strength_cache.pkl"
+
+try:
+    sector_strengths = joblib.load(CACHE_FILE)
+except Exception:
+    sector_strengths = {}
 
 # Current selected stock sector
 current_sector = get_sector(
     stock.replace(".NS", "")
-)
-
-# Calculate sector strength
-sector_strengths = calculate_sector_strength(
-    data_dict
 )
 
 # Get selected sector value
