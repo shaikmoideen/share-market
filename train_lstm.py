@@ -21,8 +21,8 @@ tf.random.set_seed(42)
 SEQUENCE_LENGTH = 60
 PERIOD = "2y"
 
-DAILY_LIMIT = 300     # Top 300 → daily
-WEEKLY_LIMIT = 500    # Next 500 → weekly
+DAILY_LIMIT = 20     # Top 300 → daily
+WEEKLY_LIMIT = 30    # Next 500 → weekly
 
 BASE_MODEL_PATH = "models"
 DAILY_PATH = os.path.join(BASE_MODEL_PATH, "daily")
