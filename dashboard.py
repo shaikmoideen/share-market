@@ -305,20 +305,29 @@ model_path_daily = f"models/daily/{clean_stock}_model.keras"
 model_path_weekly = f"models/weekly/{clean_stock}_model.keras"
 model_path_ondemand = f"models/ondemand/{clean_stock}_model.keras"
 
-if (
-    not os.path.exists(model_path_daily)
-    and not os.path.exists(model_path_weekly)
-    and not os.path.exists(model_path_ondemand)
-):
-    with st.spinner(
-        f"Training LSTM model for {clean_stock}..."
-    ):
-        run_on_demand_training(clean_stock)
+model_exists = (
+    os.path.exists(model_path_daily)
+    or os.path.exists(model_path_weekly)
+    or os.path.exists(model_path_ondemand)
+)
 
-    st.success(
-        f"LSTM model created successfully for {clean_stock}"
+if not model_exists:
+    st.warning(
+        f"No LSTM model found for {clean_stock}"
     )
 
+    if st.button(f"Train LSTM Model for {clean_stock}"):
+        with st.spinner(
+            f"Training LSTM model for {clean_stock}..."
+        ):
+            run_on_demand_training(clean_stock)
+
+        st.success(
+            f"LSTM model created successfully for {clean_stock}"
+        )
+
+        st.rerun()
+        
 # Load stock-specific LSTM model dynamically
 lstm_model, lstm_scaler, lstm_seq_len = load_lstm(clean_stock)
 

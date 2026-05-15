@@ -26,8 +26,8 @@ sector_map = {
     "POWERGRID": "POWER",
 
     "MARUTI": "AUTO",
-    "TATAMOTORS": "AUTO",
-    "M&M": "AUTO",
+    "EICHERMOT": "AUTO",
+    "BAJAJ-AUTO": "AUTO",
 
     "TATASTEEL": "METALS",
     "HINDALCO": "METALS",
@@ -63,8 +63,8 @@ SECTOR_BENCHMARK = {
 
     "AUTO": [
         "MARUTI",
-        "TATAMOTORS",
-        "M&M"
+        "EICHERMOT",
+        "BAJAJ-AUTO"
     ],
 
     "ENERGY": [
