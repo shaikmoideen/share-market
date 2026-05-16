@@ -2,8 +2,9 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import os
+import joblib
 
-from config import START_DATE, PORTFOLIO, MANAGE_PORTFOLIO, NIFTY_50_DATA
+from config import START_DATE, PORTFOLIO, MANAGE_PORTFOLIO, TOP_STOCKS_CACHE_FILE
 from utils.indicators import calculate_indicators
 from utils.sentiment import get_news_sentiment
 
@@ -182,84 +183,37 @@ if portfolio_stocks:
         )
 else:
     st.info("No stocks added in portfolio yet.")
-    
+
 # ---------------------------------
 # Today's Top Opportunities
 # ---------------------------------
 
 st.markdown("---")
-
 st.subheader("🔥 Today's Best Stocks To Invest")
 
+
+@st.cache_data(ttl=86400)
+def load_top_stocks():
+    return joblib.load(TOP_STOCKS_CACHE_FILE)
+
+
 try:
-    nifty_df = pd.read_csv(
-        NIFTY_50_DATA
-    )
+    top_results = load_top_stocks()
 
-    top_stocks = (
-        nifty_df["symbol"]
-        .dropna()
-        .head(20)
-        .apply(lambda x: x + ".NS")
-        .tolist()
-    )
+    if top_results:
+        df = pd.DataFrame(top_results)
 
-    # ---------------------------------
-    # Exclude Existing Holdings
-    # ---------------------------------
-
-    owned_stocks = [
-        item["Stock"]
-        for item in portfolio_stocks
-    ]
-
-    top_stocks = [
-        stock for stock in top_stocks
-        if stock not in owned_stocks
-    ]
+        st.dataframe(
+            df,
+            width="stretch",
+            hide_index=True
+        )
+    else:
+        st.warning(
+            "No top investment opportunities available."
+        )
 
 except Exception:
     st.warning(
-        "Unable to load NIFTY 50 data."
+        "Unable to load top investment opportunities."
     )
-    top_stocks = []
-
-top_results = []
-
-if top_stocks:
-    for stock in top_stocks:
-        result = analyze_stock(stock)
-
-        if result:
-            top_results.append(result)
-
-if top_results:
-    df = pd.DataFrame(top_results)
-
-    # Keep only strong opportunities
-    df = df[df["Score"] >= 60]
-
-    action_order = {
-        "🔥 STRONG BUY": 1,
-        "📈 HOLD": 2,
-        "⚠️ WATCH": 3,
-        "🔴 SELL": 4
-    }
-
-    df["Sort_Order"] = df["Action"].map(
-        action_order
-    )
-
-    df = df.sort_values(
-        by=["Sort_Order", "Score"],
-        ascending=[True, False]
-    ).drop(columns=["Sort_Order"])
-
-    st.dataframe(
-        df,
-        width="stretch",
-        hide_index=True
-    )
-    
-else:
-    st.warning("Unable to load top investment opportunities.")

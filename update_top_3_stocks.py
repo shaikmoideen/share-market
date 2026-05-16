@@ -1,40 +1,17 @@
-import yfinance as yf
 import joblib
 import pandas as pd
+import yfinance as yf
 
-from config import (
-    NSE_STOCK_MASTER,
-    START_DATE,
-    TOP_STOCKS_CACHE_FILE
-)
-
+from config import START_DATE, NSE_STOCK_MASTER, TOP_STOCKS_CACHE_FILE
 from utils.indicators import calculate_indicators
 from utils.sentiment import get_news_sentiment
 
-
-print("🚀 Updating Daily Top 3 Stocks Cache...\n")
-
-results = []
-
-nse_df = pd.read_csv(
-    NSE_STOCK_MASTER
-)
-
-# Limit for performance
-stocks_list = (
-    nse_df["symbol"]
-    .dropna()
-    .head(300)
-    .apply(lambda x: x + ".NS")
-    .tolist()
-)
-
-for stock in stocks_list:
+def analyze_stock(stock):
     try:
-        print(f"Checking: {stock}")
+        ticker = stock if stock.endswith(".NS") else f"{stock}.NS"
 
         data = yf.download(
-            stock,
+            ticker,
             start=START_DATE,
             auto_adjust=True,
             progress=False
@@ -44,160 +21,127 @@ for stock in stocks_list:
             data.columns = data.columns.get_level_values(0)
 
         if data.empty:
-            continue
+            return None
 
         data = calculate_indicators(data)
         data = data.dropna()
 
         if data.empty:
-            continue
+            return None
 
         latest = data.iloc[-1:]
 
-        ma50 = float(latest["MA50"].iloc[0])
-        ma200 = float(latest["MA200"].iloc[0])
-        rsi = float(latest["RSI"].iloc[0])
-        macd = float(latest["MACD"].iloc[0])
-        signal = float(latest["Signal_Line"].iloc[0])
-        latest_close = float(latest["Close"].iloc[0])
-        prev_close = float(data["Close"].iloc[-2])
+        ma50 = latest["MA50"].iloc[0]
+        ma200 = latest["MA200"].iloc[0]
+        rsi = latest["RSI"].iloc[0]
+        macd = latest["MACD"].iloc[0]
+        signal = latest["Signal_Line"].iloc[0]
 
-        company_name = nse_df.loc[
-            nse_df["symbol"] + ".NS" == stock,
-            "name"
-        ].values[0]
-
-        try:
-            news_sentiment = float(get_news_sentiment(company_name))
-        except:
-            news_sentiment = 0
+        company_name = stock.replace(".NS", "")
+        sentiment = get_news_sentiment(company_name)
 
         score = 0
 
-        # ---------------------------------
-        # MA Trend Strength
-        # ---------------------------------
-
         if ma50 > ma200:
-            score += 25
+            score += 30
 
-            # Strong bullish crossover bonus
-            if (ma50 - ma200) / ma200 > 0.03:
-                score += 10
-
-        # ---------------------------------
-        # RSI Strength
-        # ---------------------------------
-
-        if 40 <= rsi <= 60:
-            score += 15
-
-        elif 30 <= rsi < 40:
-            score += 10
-
+        if 30 <= rsi <= 60:
+            score += 20
         elif rsi < 30:
-            score += 5
-
-        elif rsi > 75:
-            score -= 10
-
-        # ---------------------------------
-        # MACD Strength
-        # ---------------------------------
+            score += 10
 
         if macd > signal:
+            score += 30
+
+        if sentiment >= 0.2:
             score += 20
-
-            # Strong momentum bonus
-            if (macd - signal) > 1:
-                score += 10
-
-        # ---------------------------------
-        # Price Momentum
-        # ---------------------------------
-
-        price_change_pct = (
-            (latest_close - prev_close) / prev_close
-        ) * 100
-
-        if price_change_pct > 1:
-            score += 10
-
-        elif price_change_pct < -2:
-            score -= 10
-
-        # ---------------------------------
-        # Volume Breakout
-        # ---------------------------------
-
-        avg_volume = data["Volume"].tail(20).mean()
-        latest_volume = float(latest["Volume"].iloc[0])
-
-        if latest_volume > avg_volume * 1.5:
-            score += 10
-
-        # ---------------------------------
-        # News Sentiment
-        # ---------------------------------
-
-        if news_sentiment >= 0.3:
-            score += 15
-
-        elif news_sentiment <= -0.2:
-            score -= 10
-
-        # ---------------------------------
-        # Volatility Check
-        # ---------------------------------
-
-        volatility = data["Close"].pct_change().std() * 100
-
-        if volatility < 2:
-            score += 10
-
-        elif volatility > 5:
-            score -= 10
-
-        # ---------------------------------
-        # Final Score Clamp
-        # ---------------------------------
 
         score = max(0, min(score, 100))
 
-        results.append({
-            "Stock": stock,
-            "Score": score
-        })
+        if score >= 80:
+            action = "🔥 STRONG BUY"
+        elif score >= 60:
+            action = "📈 HOLD"
+        elif score >= 40:
+            action = "⚠️ WATCH"
+        else:
+            action = "🔴 SELL"
+
+        current_price = round(
+            latest["Close"].iloc[0],
+            2
+        )
+
+        return {
+            "Stock": ticker,
+            "Current Price": current_price,
+            "MA Trend": "Bullish" if ma50 > ma200 else "Bearish",
+            "RSI": round(rsi, 2),
+            "Sentiment": round(sentiment, 2),
+            "Score": score,
+            "Action": action
+        }
 
     except Exception as e:
-        print(f"Error: {stock} → {e}")
+        print(f"{stock}: {e}")
+        return None
 
-df = pd.DataFrame(results)
 
-filtered_df = df[
-    df["Score"] >= 70
-]
+def update_top_stocks():
+    print("Updating Top Investment Opportunities...")
 
-if len(filtered_df) >= 3:
-    top_3 = filtered_df.sort_values(
-        by="Score",
-        ascending=False
-    ).drop_duplicates(
-        subset=["Score"]
-    ).head(3)
-else:
-    # fallback if market is weak today
-    top_3 = df.sort_values(
-        by="Score",
-        ascending=False
-    ).drop_duplicates(
-        subset=["Score"]
-    ).head(3)
+    try:
+        stock_df = pd.read_csv(NSE_STOCK_MASTER)
 
-joblib.dump(
-    top_3.to_dict("records"),
-    TOP_STOCKS_CACHE_FILE
-)
+        top_stocks = (
+            stock_df["symbol"]
+            .dropna()
+            .head(300)
+            .tolist()
+        )
 
-print("\n✅ Top 3 Stocks Cache Updated Successfully!")
-print(top_3)
+    except Exception as e:
+        print(f"Unable to load stock master: {e}")
+        return
+
+    top_results = []
+
+    for stock in top_stocks:
+        result = analyze_stock(stock)
+
+        if result:
+            top_results.append(result)
+
+    if not top_results:
+        print("No valid stock results found")
+        return
+
+    df = pd.DataFrame(top_results)
+
+    df = df[df["Score"] >= 40]
+
+    action_order = {
+        "🔥 STRONG BUY": 1,
+        "📈 HOLD": 2,
+        "⚠️ WATCH": 3,
+        "🔴 SELL": 4
+    }
+
+    df["Sort_Order"] = df["Action"].map(
+        action_order
+    )
+
+    df = df.sort_values(
+        by=["Sort_Order", "Score"],
+        ascending=[True, False]
+    ).drop(columns=["Sort_Order"])
+
+    final_results = df.head(10).to_dict("records")
+
+    joblib.dump(final_results, TOP_STOCKS_CACHE_FILE)
+
+    print(f"Saved → {TOP_STOCKS_CACHE_FILE} ✅")
+
+
+if __name__ == "__main__":
+    update_top_stocks()
